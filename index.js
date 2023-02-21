@@ -37,10 +37,10 @@ const typeDefs = `#graphql
     dewpoint_c: Float!
     wind_dir_degrees: Int!
     wind_speed_kt: Float!
-    visibility_statute_mi: Float!
+    visibility_statute_mi: Float
     altim_in_hg: Float!
     sea_level_pressure_mb: Float
-    flight_category: String!
+    flight_category: String
     sky_condition: [SkyCondition!]!
   }
 
