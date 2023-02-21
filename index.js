@@ -1,5 +1,8 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
+import MetarAPI from './metar-api.js';
+
+const metar_endpoint = 'https://avwx.fekke.com/metar/';
 
 const books = [
     {
@@ -26,24 +29,24 @@ const typeDefs = `#graphql
 
   type Metar {
     raw_text: String!
-    station_id: String!
+    station_id: String
     observation_time: String!
     latitude: Float!
     longitude: Float!
-    temp_c: Float
+    temp_c: Float!
     dewpoint_c: Float!
     wind_dir_degrees: Int!
-    wind_speed_kt: Int!
+    wind_speed_kt: Float!
     visibility_statute_mi: Float!
     altim_in_hg: Float!
-    sea_level_pressure_mb: Float!
-    wx_string: String!
+    sea_level_pressure_mb: Float
+    flight_category: String!
     sky_condition: [SkyCondition!]!
   }
 
   type SkyCondition {
     sky_cover: String!
-    cloud_base_ft_agl: Int!
+    cloud_base_ft_agl: Int
   }
 
   # The "Query" type is special: it lists all of the available queries that
@@ -51,7 +54,9 @@ const typeDefs = `#graphql
   # case, the "books" query returns an array of zero or more Books (defined above).
   type Query {
     books: [Book]
+    getMetar(id: String!): [Metar!]!
   }
+
 `;
 
 // Resolvers define how to fetch the types defined in your schema.
@@ -59,7 +64,10 @@ const typeDefs = `#graphql
 const resolvers = {
     Query: {
       books: () => books,
-    },
+      getMetar: async (_, { id }, { dataSources }) => {
+        return dataSources.metarAPI.getMetar(id);
+      },  
+    }
   };
 
   // The ApolloServer constructor requires two parameters: your schema
@@ -75,6 +83,16 @@ const server = new ApolloServer({
   //  3. prepares your app to handle incoming requests
   const { url } = await startStandaloneServer(server, {
     listen: { port: 4000 },
+    context: async () => {
+      const { cache } = server;
+     return {
+       // We create new instances of our data sources with each request,
+       // passing in our server's cache.
+       dataSources: {
+         metarAPI: new MetarAPI({ cache })
+       },
+     };
+   }
   });
   
   console.log(`🚀  Server ready at: ${url}`);
